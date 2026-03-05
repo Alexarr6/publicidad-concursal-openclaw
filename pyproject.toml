@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.24.2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "publicidadconcursal-exporter"
+version = "0.1.0"
+description = "Automatiza busqueda por fecha y export diario de publicidadconcursal.es"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "OpenClaw" }]
+dependencies = [
+  "pandas>=2.2.3",
+  "requests>=2.32.3",
+]
+
+[project.optional-dependencies]
+web = [
+  "playwright>=1.54.0",
+  "browser-use>=0.1.40",
+]
+dev = [
+  "pytest>=8.3.4",
+  "pytest-cov>=6.0.0",
+  "mypy>=1.14.1",
+  "ruff>=0.8.6",
+  "pre-commit>=4.0.1",
+]
+
+[project.scripts]
+publicidadconcursal-export = "publicidadconcursal_exporter.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+mypy_path = "src"
+exclude = ["tests"]
