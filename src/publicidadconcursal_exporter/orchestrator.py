@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
-from typing import Callable
 
+from publicidadconcursal_exporter.automation.base import AutomationRunner
 from publicidadconcursal_exporter.automation.browser_use_runner import BrowserUseRunner
 from publicidadconcursal_exporter.automation.playwright_runner import PlaywrightRunner
 from publicidadconcursal_exporter.config import ExportConfig
@@ -39,7 +40,7 @@ def run_export(config: ExportConfig) -> tuple[Path, Path]:
     return raw_file, csv_output
 
 
-def _resolve_runner(engine: str) -> BrowserUseRunner | PlaywrightRunner | "AutoRunner":
+def _resolve_runner(engine: str) -> AutomationRunner:
     if engine == "browser-use":
         return BrowserUseRunner()
     if engine == "playwright":
@@ -64,7 +65,7 @@ def _retry_automation(
     config: ExportConfig,
     raw_dir: Path,
     automation_fn: Callable[[str, date, Path, int], Path],
-    log: Callable[[str, object], None],
+    log: Callable[..., None],
 ) -> Path:
     last_error: Exception | None = None
     for attempt in range(1, config.max_retries + 1):
@@ -84,4 +85,8 @@ def _retry_automation(
             last_error = exc
             log("Intento %s/%s falló: %s", attempt, config.max_retries, exc)
 
-    raise RuntimeError("No se pudo completar la exportación tras reintentos") from last_error
+    message = (
+        f"No se pudo completar la exportación tras {config.max_retries} intentos. "
+        f"Último error: {last_error}"
+    )
+    raise RuntimeError(message) from last_error
