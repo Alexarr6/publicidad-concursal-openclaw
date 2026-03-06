@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -42,9 +43,36 @@ class BrowserUseRunner:
             return out_path
 
     def _run_ui_flow(self, page: Any, date_candidates: list[str], timeout_ms: int) -> None:
+        self._dismiss_cookie_banner(page)
         self._click_search_by_date(page)
         self._fill_date(page, date_candidates)
         page.get_by_role("button", name="Buscar").first.click(timeout=timeout_ms)
+
+    def _dismiss_cookie_banner(self, page: Any) -> None:
+        # Klaro cookie modal can intercept pointer events and block UI actions.
+        # Try common consent actions and then wait for overlay to disappear.
+        for label in [
+            "Aceptar",
+            "Aceptar todo",
+            "Aceptar todas",
+            "Aceptar cookies",
+            "Rechazar",
+            "Rechazar todo",
+            "Guardar preferencias",
+            "Entendido",
+        ]:
+            try:
+                btn = page.get_by_role("button", name=label).first
+                if btn.count() > 0:
+                    btn.click(timeout=3000)
+                    break
+            except Exception:
+                continue
+
+        for selector in ["#klaro-cookie-notice", "#klaro .cm-bg"]:
+            # If not found/hidden already, continue silently.
+            with suppress(Exception):
+                page.locator(selector).first.wait_for(state="hidden", timeout=5000)
 
     def _click_search_by_date(self, page: Any) -> None:
         for query in [
