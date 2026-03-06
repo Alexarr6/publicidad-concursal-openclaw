@@ -53,7 +53,7 @@ class FlakyRunner:
         del target_url, timeout_ms
         self.calls += 1
         if self.calls == 1:
-            raise RuntimeError("fallo transitorio")
+            raise RuntimeError("transient failure")
         raw = download_dir / f"raw-{run_date.isoformat()}.csv"
         pd.DataFrame({"fecha": ["05/03/2026"], "expediente": [1]}).to_csv(raw, index=False)
         return raw

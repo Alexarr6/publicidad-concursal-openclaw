@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from datetime import date
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
@@ -9,19 +10,17 @@ from publicidadconcursal_exporter.date_utils import to_site_date_formats
 
 
 class BrowserUseRunner:
-    """Preferred runner when browser-use is installed and operational."""
+    """Runner gated by `browser-use` availability, implemented with Playwright actions."""
 
     def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        try:
-            import browser_use  # noqa: F401
-        except ImportError as exc:
-            raise RuntimeError("browser-use no está instalado. Usar --engine playwright.") from exc
+        if find_spec("browser_use") is None:
+            raise RuntimeError("browser-use is not installed. Use --engine playwright.")
 
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as exc:
             raise RuntimeError(
-                "browser-use fallback interno requiere playwright instalado"
+                "browser-use compatibility flow requires playwright to be installed"
             ) from exc
 
         date_candidates = to_site_date_formats(run_date)
@@ -96,7 +95,7 @@ class BrowserUseRunner:
                     return
                 except Exception:
                     continue
-        raise RuntimeError("No se encontró campo de fecha para completar la búsqueda")
+        raise RuntimeError("Date input field not found for search")
 
     def _click_export(self, page: Any) -> None:
         for text in ["Exportar", "Descargar", "CSV", "Excel"]:
@@ -104,4 +103,4 @@ class BrowserUseRunner:
             if loc.count() > 0:
                 loc.click()
                 return
-        raise RuntimeError("No se encontró botón de exportación")
+        raise RuntimeError("Export button not found")

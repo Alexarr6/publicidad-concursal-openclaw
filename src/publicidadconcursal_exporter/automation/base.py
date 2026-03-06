@@ -6,5 +6,7 @@ from typing import Protocol
 
 
 class AutomationRunner(Protocol):
+    """Contract for automation runners used by the orchestrator."""
+
     def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
         """Run date search + export and return downloaded file path."""

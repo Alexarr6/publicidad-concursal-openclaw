@@ -6,6 +6,8 @@ from pathlib import Path
 
 
 def setup_logger(base_dir: Path) -> logging.Logger:
+    """Create a run-scoped logger that writes to console and artifacts/logs."""
+
     log_dir = base_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     run_stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")

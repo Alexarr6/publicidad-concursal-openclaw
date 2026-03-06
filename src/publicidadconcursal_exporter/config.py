@@ -9,6 +9,8 @@ DEFAULT_TARGET_URL = "https://www.publicidadconcursal.es/consulta-publicidad-con
 
 @dataclass(frozen=True)
 class ExportConfig:
+    """Configuration for one export run."""
+
     target_url: str
     run_date: date
     output_dir: Path

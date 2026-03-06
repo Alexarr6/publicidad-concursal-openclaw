@@ -19,6 +19,8 @@ from publicidadconcursal_exporter.parsing.normalize import (
 
 
 def run_export(config: ExportConfig) -> tuple[Path, Path]:
+    """Run automation + normalization and return `(raw_file, normalized_csv)` paths."""
+
     artifacts_base = config.output_dir / "artifacts"
     logger = setup_logger(artifacts_base)
     raw_dir = artifacts_base / "raw" / config.run_date.isoformat()
@@ -26,21 +28,23 @@ def run_export(config: ExportConfig) -> tuple[Path, Path]:
 
     runner = _resolve_runner(config.engine)
     raw_file = _retry_automation(config, raw_dir, runner.run, logger.info)
-    logger.info("Raw export guardado en %s", raw_file)
+    logger.info("Raw export saved to %s", raw_file)
 
     df = load_export(raw_file)
     normalized = normalize_dataframe(df, config.run_date)
     if normalized.empty:
-        raise EmptyExportError("CSV final vacío")
+        raise EmptyExportError("Final CSV is empty")
 
     csv_output = artifacts_base / "csv" / f"publicidadconcursal-{config.run_date.isoformat()}.csv"
     export_daily_csv(normalized, csv_output)
-    logger.info("CSV normalizado guardado en %s (%s filas)", csv_output, len(normalized))
+    logger.info("Normalized CSV saved to %s (%s rows)", csv_output, len(normalized))
 
     return raw_file, csv_output
 
 
 def _resolve_runner(engine: str) -> AutomationRunner:
+    """Instantiate a runner based on engine selection."""
+
     if engine == "browser-use":
         return BrowserUseRunner()
     if engine == "playwright":
@@ -50,6 +54,8 @@ def _resolve_runner(engine: str) -> AutomationRunner:
 
 
 class AutoRunner:
+    """Try browser-use compatibility mode first, then fallback to Playwright."""
+
     def __init__(self) -> None:
         self._browser_use = BrowserUseRunner()
         self._playwright = PlaywrightRunner()
@@ -67,6 +73,8 @@ def _retry_automation(
     automation_fn: Callable[[str, date, Path, int], Path],
     log: Callable[..., None],
 ) -> Path:
+    """Retry automation and move the resulting download to the final raw folder."""
+
     last_error: Exception | None = None
     for attempt in range(1, config.max_retries + 1):
         try:
@@ -83,10 +91,10 @@ def _retry_automation(
             return final_path
         except Exception as exc:
             last_error = exc
-            log("Intento %s/%s falló: %s", attempt, config.max_retries, exc)
+            log("Attempt %s/%s failed: %s", attempt, config.max_retries, exc)
 
     message = (
-        f"No se pudo completar la exportación tras {config.max_retries} intentos. "
-        f"Último error: {last_error}"
+        f"Could not complete export after {config.max_retries} attempts. "
+        f"Last error: {last_error}"
     )
     raise RuntimeError(message) from last_error

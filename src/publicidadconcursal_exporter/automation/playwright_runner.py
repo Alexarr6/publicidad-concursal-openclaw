@@ -8,11 +8,13 @@ from publicidadconcursal_exporter.date_utils import to_site_date_formats
 
 
 class PlaywrightRunner:
+    """Primary Playwright automation runner."""
+
     def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
         try:
             from playwright.sync_api import sync_playwright
         except ImportError as exc:
-            raise RuntimeError("Playwright no está instalado. Instala extras [web].") from exc
+            raise RuntimeError("Playwright is not installed. Install the [web] extras.") from exc
 
         date_candidates = to_site_date_formats(run_date)
         with sync_playwright() as playwright:
@@ -59,7 +61,7 @@ class PlaywrightRunner:
                     return
                 except Exception:
                     continue
-        raise RuntimeError("No se pudo rellenar campo de fecha")
+        raise RuntimeError("Could not fill date input field")
 
     def _click_export(self, page: Any) -> None:
         for selector in ["text=Exportar", "text=Descargar", "text=CSV", "text=Excel"]:
@@ -67,4 +69,4 @@ class PlaywrightRunner:
             if loc.count() > 0:
                 loc.click()
                 return
-        raise RuntimeError("No se encontró botón de exportación")
+        raise RuntimeError("Export button not found")

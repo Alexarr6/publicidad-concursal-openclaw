@@ -12,10 +12,14 @@ from publicidadconcursal_exporter.parsing.normalize import (
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Normaliza export manual de Publicidad Concursal")
+    """Normalize an already downloaded raw export into the daily CSV format."""
+
+    parser = argparse.ArgumentParser(
+        description="Normalize a manually downloaded Publicidad Concursal export"
+    )
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
-    parser.add_argument("--raw-path", required=True, help="Ruta del raw exportado")
-    parser.add_argument("--output-dir", default=".", help="Directorio base de salida")
+    parser.add_argument("--raw-path", required=True, help="Path to the downloaded raw export")
+    parser.add_argument("--output-dir", default=".", help="Base output directory")
     args = parser.parse_args()
 
     run_date = parse_cli_date(args.date)

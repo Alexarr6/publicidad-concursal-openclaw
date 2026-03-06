@@ -16,10 +16,12 @@ DATE_CANDIDATES = {
 
 
 class EmptyExportError(RuntimeError):
-    pass
+    """Raised when a raw export cannot produce a usable normalized dataset."""
 
 
 def load_export(raw_path: Path) -> pd.DataFrame:
+    """Load raw export data from CSV/TXT/Excel with light format auto-detection."""
+
     suffix = raw_path.suffix.lower()
     if suffix in {".xls", ".xlsx"}:
         return pd.read_excel(raw_path)
@@ -33,8 +35,10 @@ def load_export(raw_path: Path) -> pd.DataFrame:
 
 
 def normalize_dataframe(df: pd.DataFrame, run_date: date) -> pd.DataFrame:
+    """Normalize, sort, and annotate an export dataframe for daily output."""
+
     if df.empty:
-        raise EmptyExportError("El fichero exportado está vacío")
+        raise EmptyExportError("The exported file is empty")
 
     normalized = df.copy()
     normalized.columns = pd.Index([str(col).strip() for col in normalized.columns])
@@ -51,17 +55,21 @@ def normalize_dataframe(df: pd.DataFrame, run_date: date) -> pd.DataFrame:
     normalized = normalized.reset_index(drop=True)
 
     if normalized.empty:
-        raise EmptyExportError("La normalización produjo 0 filas")
+        raise EmptyExportError("Normalization produced zero rows")
 
     return normalized
 
 
 def export_daily_csv(df: pd.DataFrame, output_path: Path) -> None:
+    """Write normalized daily results to CSV."""
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
 
 
 def _pick_date_column(df: pd.DataFrame) -> str | None:
+    """Return the first matching date-like column, if present."""
+
     for col in df.columns:
         if str(col).strip().lower() in DATE_CANDIDATES:
             return str(col)

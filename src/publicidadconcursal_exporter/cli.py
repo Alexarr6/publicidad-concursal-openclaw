@@ -9,25 +9,31 @@ from publicidadconcursal_exporter.orchestrator import run_export
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Create the CLI argument parser for daily export execution."""
+
     parser = argparse.ArgumentParser(
         prog="publicidadconcursal-export",
-        description="Automatiza búsqueda por fecha y export diario de Publicidad Concursal.",
+        description="Run date-based search and daily export for Publicidad Concursal.",
     )
-    parser.add_argument("--date", dest="run_date", default=None, help="Fecha en formato YYYY-MM-DD")
-    parser.add_argument("--target-url", default=DEFAULT_TARGET_URL, help="URL objetivo")
-    parser.add_argument("--output-dir", default=".", help="Directorio de salida")
+    parser.add_argument("--date", dest="run_date", default=None, help="Date in YYYY-MM-DD format")
+    parser.add_argument("--target-url", default=DEFAULT_TARGET_URL, help="Target URL")
+    parser.add_argument("--output-dir", default=".", help="Output directory")
     parser.add_argument(
         "--engine",
         choices=["auto", "browser-use", "playwright"],
         default="auto",
-        help="Motor de automatización",
+        help="Automation engine",
     )
-    parser.add_argument("--max-retries", type=int, default=2, help="Reintentos de automatización")
-    parser.add_argument("--timeout-ms", type=int, default=30_000, help="Timeout por paso en ms")
+    parser.add_argument("--max-retries", type=int, default=2, help="Number of retry attempts")
+    parser.add_argument(
+        "--timeout-ms", type=int, default=30_000, help="Per-step timeout in milliseconds"
+    )
     return parser
 
 
 def main() -> None:
+    """Execute the export pipeline from CLI arguments."""
+
     parser = build_parser()
     args = parser.parse_args()
 
