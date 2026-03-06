@@ -5,14 +5,13 @@ build-backend = "hatchling.build"
 [project]
 name = "publicidadconcursal-exporter"
 version = "0.1.0"
-description = "Automatiza busqueda por fecha y export diario de publicidadconcursal.es"
+description = "Automates date-based search and daily export for publicidadconcursal.es"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "OpenClaw" }]
 dependencies = [
   "pandas>=2.2.3",
   "openpyxl>=3.1.5",
-  "requests>=2.32.3",
 ]
 
 [project.optional-dependencies]

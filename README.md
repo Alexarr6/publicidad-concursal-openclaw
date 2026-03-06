@@ -1,21 +1,21 @@
 # publicidad-concursal-openclaw
 
-Automatiza la búsqueda por fecha en Publicidad Concursal, descarga el export del día y genera un CSV normalizado ordenado por fecha.
+Automates date-based search in Publicidad Concursal, downloads the daily export, and produces a normalized CSV sorted by date.
 
-## Requisitos
+## Requirements
 
 - Python 3.11+
-- `uv` recomendado (comandos del proyecto)
-- Navegador para Playwright (`playwright install chromium`)
+- `uv` recommended for project commands
+- Browser for Playwright (`playwright install chromium`)
 
-## Instalación
+## Installation
 
 ```bash
 uv sync --all-extras
 uv run playwright install chromium
 ```
 
-## Uso CLI
+## CLI Usage
 
 ```bash
 uv run publicidadconcursal-export --date 2026-03-05 \
@@ -24,33 +24,33 @@ uv run publicidadconcursal-export --date 2026-03-05 \
   --output-dir .
 ```
 
-Parámetros clave:
+Key parameters:
 
-- `--date YYYY-MM-DD` (default: hoy)
-- `--target-url` URL objetivo (default oficial)
+- `--date YYYY-MM-DD` (default: today)
+- `--target-url` target URL (official URL by default)
 - `--engine auto|browser-use|playwright`
-- `--max-retries` reintentos ante errores de UI/red
-- `--timeout-ms` timeout por paso
+- `--max-retries` retries for transient UI/network failures
+- `--timeout-ms` per-step timeout
 
-## Flujo implementado
+## Implemented Flow
 
-1. Click en búsqueda por fecha.
-2. Rellenar fecha en formatos compatibles (`YYYY-MM-DD`, `DD/MM/YYYY`, `DD-MM-YYYY`).
-3. Click en `Buscar`.
-4. Click en `Exportar`.
-5. Guardado de artefacto raw en `artifacts/raw/YYYY-MM-DD/`.
-6. Parseo + normalización con pandas.
-7. Generación de CSV diario en `artifacts/csv/` ordenado por fecha.
+1. Click date-based search.
+2. Fill the date with supported formats (`YYYY-MM-DD`, `DD/MM/YYYY`, `DD-MM-YYYY`).
+3. Click `Buscar`.
+4. Click `Exportar`.
+5. Store raw artifact in `artifacts/raw/YYYY-MM-DD/`.
+6. Parse and normalize with pandas.
+7. Generate daily CSV in `artifacts/csv/`, sorted by date.
 
-## Validaciones
+## Validations
 
-- Si export raw está vacío: error explícito.
-- Si CSV normalizado queda vacío: error explícito.
-- Ordena por columna de fecha detectada (`fecha`, `fecha_publicacion`, `fecha de publicación`, `date`, etc.).
+- If raw export is empty: explicit error.
+- If normalized CSV is empty: explicit error.
+- Sorts by detected date column (`fecha`, `fecha_publicacion`, `fecha de publicación`, `date`, and similar variants).
 
-## Calidad
+## Quality
 
-Comandos del contrato:
+Contract verification commands:
 
 ```bash
 uv run ruff check .
@@ -61,33 +61,33 @@ uv run pre-commit run --all-files
 
 ## Pre-commit
 
-Instalación:
+Install:
 
 ```bash
 uv run pre-commit install
 ```
 
-Ejecución manual:
+Run manually:
 
 ```bash
 uv run pre-commit run --all-files
 ```
 
-Hooks incluidos:
+Included hooks:
 
 - hygiene (`trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files`)
 - safety (`detect-private-key`, `check-merge-conflict`)
-- lint/formato (`ruff`, `ruff-format`)
-- tipado (`mypy`)
+- lint/format (`ruff`, `ruff-format`)
+- type checking (`mypy`)
 
-## Workaround manual (si la web bloquea automatización)
+## Manual Workaround (if automation is blocked by the site)
 
-1. Abrir `https://www.publicidadconcursal.es/consulta-publicidad-concursal-new`.
-2. Ir a búsqueda por fecha.
-3. Introducir fecha del día objetivo (`DD/MM/YYYY` normalmente funciona).
-4. Pulsar `Buscar` y luego `Exportar`.
-5. Guardar archivo en `artifacts/raw/YYYY-MM-DD/`.
-6. Normalizar con:
+1. Open `https://www.publicidadconcursal.es/consulta-publicidad-concursal-new`.
+2. Go to date-based search.
+3. Enter the target day date (`DD/MM/YYYY` usually works).
+4. Click `Buscar`, then `Exportar`.
+5. Save the downloaded file into `artifacts/raw/YYYY-MM-DD/`.
+6. Normalize it with:
 
 ```bash
 uv run python -m publicidadconcursal_exporter.manual_normalize \
@@ -96,9 +96,15 @@ uv run python -m publicidadconcursal_exporter.manual_normalize \
   --output-dir .
 ```
 
-## Estructura
+## browser-use Integration Note
 
-- `src/publicidadconcursal_exporter/automation/` runners de automatización
-- `src/publicidadconcursal_exporter/parsing/` parseo y normalización
-- `src/publicidadconcursal_exporter/orchestrator.py` pipeline principal
-- `tests/` cobertura unitaria
+- The `browser-use` engine is currently a compatibility-gated runner.
+- It validates that `browser_use` is installed, then executes the existing Playwright-based deterministic flow.
+- This keeps behavior stable while preserving an explicit dependency path for future native browser-use agent migration.
+
+## Project Structure
+
+- `src/publicidadconcursal_exporter/automation/`: automation runners
+- `src/publicidadconcursal_exporter/parsing/`: parsing and normalization
+- `src/publicidadconcursal_exporter/orchestrator.py`: main pipeline
+- `tests/`: unit tests
