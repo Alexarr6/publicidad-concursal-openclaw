@@ -56,7 +56,7 @@ Comandos del contrato:
 uv run ruff check .
 uv run pytest
 uv run mypy .
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ## Pre-commit
@@ -70,7 +70,7 @@ uv run pre-commit install
 Ejecución manual:
 
 ```bash
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 Hooks incluidos:

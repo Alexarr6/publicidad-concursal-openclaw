@@ -37,7 +37,7 @@ def normalize_dataframe(df: pd.DataFrame, run_date: date) -> pd.DataFrame:
         raise EmptyExportError("El fichero exportado está vacío")
 
     normalized = df.copy()
-    normalized.columns = [str(col).strip() for col in normalized.columns]
+    normalized.columns = pd.Index([str(col).strip() for col in normalized.columns])
 
     date_col = _pick_date_column(normalized)
     if date_col is not None:

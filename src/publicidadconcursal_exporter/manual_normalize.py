@@ -4,7 +4,11 @@ import argparse
 from pathlib import Path
 
 from publicidadconcursal_exporter.date_utils import parse_cli_date
-from publicidadconcursal_exporter.parsing.normalize import export_daily_csv, load_export, normalize_dataframe
+from publicidadconcursal_exporter.parsing.normalize import (
+    export_daily_csv,
+    load_export,
+    normalize_dataframe,
+)
 
 
 def main() -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from publicidadconcursal_exporter.date_utils import to_site_date_formats
 
@@ -25,14 +26,15 @@ class PlaywrightRunner:
             with page.expect_download(timeout=timeout_ms) as download_info:
                 self._click_export(page)
             download = download_info.value
-            safe_name = download.suggested_filename or f"publicidadconcursal-{run_date.isoformat()}.bin"
+            default_name = f"publicidadconcursal-{run_date.isoformat()}.bin"
+            safe_name = download.suggested_filename or default_name
             out_path = download_dir / safe_name
             download.save_as(str(out_path))
             context.close()
             browser.close()
             return out_path
 
-    def _click_search_by_date(self, page: object) -> None:
+    def _click_search_by_date(self, page: Any) -> None:
         selectors = [
             "text=Busqueda por fecha",
             "text=Búsqueda por fecha",
@@ -45,7 +47,7 @@ class PlaywrightRunner:
                 loc.click()
                 return
 
-    def _fill_date(self, page: object, date_candidates: list[str]) -> None:
+    def _fill_date(self, page: Any, date_candidates: list[str]) -> None:
         selectors = ["input[type='date']", "input[name*='fecha']", "input[id*='fecha']"]
         for selector in selectors:
             loc = page.locator(selector).first
@@ -59,7 +61,7 @@ class PlaywrightRunner:
                     continue
         raise RuntimeError("No se pudo rellenar campo de fecha")
 
-    def _click_export(self, page: object) -> None:
+    def _click_export(self, page: Any) -> None:
         for selector in ["text=Exportar", "text=Descargar", "text=CSV", "text=Excel"]:
             loc = page.locator(selector).first
             if loc.count() > 0:
