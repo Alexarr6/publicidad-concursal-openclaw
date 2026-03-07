@@ -6,16 +6,17 @@ Automates date-based search in Publicidad Concursal, downloads the daily export,
 
 - Python 3.11+
 - `uv` recommended for project commands
-- Browser for Playwright (`playwright install chromium`)
+- Browser for Playwright (`playwright install chromium`) when running browser automation on host
+- Docker Engine + Compose plugin for containerized runs
 
-## Installation
+## Installation (host)
 
 ```bash
 uv sync --all-extras
 uv run playwright install chromium
 ```
 
-## CLI Usage
+## CLI Usage (host)
 
 ```bash
 uv run publicidadconcursal-export --date 2026-03-05 \
@@ -31,6 +32,38 @@ Key parameters:
 - `--engine auto|browser-use|playwright`
 - `--max-retries` retries for transient UI/network failures
 - `--timeout-ms` per-step timeout
+
+## Docker Quickstart
+
+Build image:
+
+```bash
+docker build -t publicidadconcursal-exporter:local .
+```
+
+Validate compose and CLI help:
+
+```bash
+docker compose config
+docker compose run --rm app --help
+```
+
+Run export from container:
+
+```bash
+docker compose run --rm app \
+  --date 2026-03-05 \
+  --target-url https://www.publicidadconcursal.es/consulta-publicidad-concursal-new \
+  --output-dir /app
+```
+
+The compose service mounts host `./artifacts` to `/app/artifacts` in the container.
+
+## Raspberry Pi Notes
+
+See dedicated operations guide:
+
+- `docs/raspberry-pi-docker.md`
 
 ## Implemented Flow
 
@@ -53,10 +86,10 @@ Key parameters:
 Contract verification commands:
 
 ```bash
+uv pip check
+uv run pytest -q
 uv run ruff check .
-uv run pytest
-uv run mypy .
-uv run pre-commit run --all-files
+uv run mypy src
 ```
 
 ## Pre-commit
