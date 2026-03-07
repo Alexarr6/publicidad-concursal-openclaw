@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: publicidadconcursal-exporter:local
+    working_dir: /app
+    volumes:
+      - ./artifacts:/app/artifacts
+    command: ["--help"]

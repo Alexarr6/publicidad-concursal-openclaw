@@ -17,3 +17,12 @@ __pycache__/
 .DS_Store
 *.log
 artifacts/
+
+# Local OpenClaw workspace/agent files (never commit)
+.openclaw/
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+AGENTS.md
