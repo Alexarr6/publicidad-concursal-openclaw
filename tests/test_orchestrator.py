@@ -5,20 +5,21 @@ import pandas as pd
 import pytest
 
 from publicidadconcursal_exporter.config import ExportConfig
+from publicidadconcursal_exporter.models import ExportOutput, ExportRequest, ExportTestSpec
 from publicidadconcursal_exporter.orchestrator import run_export
 
 
 class FakeRunner:
-    def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        del target_url, timeout_ms
-        raw = download_dir / f"raw-{run_date.isoformat()}.csv"
+    def run(self, request: ExportRequest, test: ExportTestSpec) -> ExportOutput:
+        del test
+        raw = request.download_dir / f"raw-{request.run_date.isoformat()}.csv"
         pd.DataFrame(
             {
                 "fecha": ["05/03/2026", "01/03/2026"],
                 "expediente": [2, 1],
             }
         ).to_csv(raw, index=False)
-        return raw
+        return ExportOutput(file_path=raw, plan_name="search_and_export")
 
 
 def test_run_export_generates_raw_and_sorted_csv(
@@ -32,7 +33,7 @@ def test_run_export_generates_raw_and_sorted_csv(
         target_url="https://example.com",
         run_date=date(2026, 3, 5),
         output_dir=tmp_path,
-        engine="auto",
+        engine="browser-use",
     )
 
     raw, csv = run_export(cfg)
@@ -49,14 +50,14 @@ class FlakyRunner:
     def __init__(self) -> None:
         self.calls = 0
 
-    def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        del target_url, timeout_ms
+    def run(self, request: ExportRequest, test: ExportTestSpec) -> ExportOutput:
+        del test
         self.calls += 1
         if self.calls == 1:
             raise RuntimeError("transient failure")
-        raw = download_dir / f"raw-{run_date.isoformat()}.csv"
+        raw = request.download_dir / f"raw-{request.run_date.isoformat()}.csv"
         pd.DataFrame({"fecha": ["05/03/2026"], "expediente": [1]}).to_csv(raw, index=False)
-        return raw
+        return ExportOutput(file_path=raw, plan_name="search_and_export")
 
 
 def test_run_export_retries_and_succeeds(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -69,7 +70,7 @@ def test_run_export_retries_and_succeeds(monkeypatch: pytest.MonkeyPatch, tmp_pa
         target_url="https://example.com",
         run_date=date(2026, 3, 5),
         output_dir=tmp_path,
-        engine="auto",
+        engine="browser-use",
         max_retries=2,
     )
 

@@ -3,7 +3,11 @@ from datetime import date
 import pandas as pd
 import pytest
 
-from publicidadconcursal_exporter.parsing.normalize import EmptyExportError, normalize_dataframe
+from publicidadconcursal_exporter.parsing.normalize import (
+    EmptyExportError,
+    OutputSchemaError,
+    normalize_dataframe,
+)
 
 
 def test_normalize_sorts_by_fecha_column() -> None:
@@ -24,3 +28,10 @@ def test_normalize_sorts_by_fecha_column() -> None:
 def test_normalize_raises_on_empty() -> None:
     with pytest.raises(EmptyExportError):
         normalize_dataframe(pd.DataFrame(), date(2026, 3, 5))
+
+
+def test_normalize_raises_when_date_like_column_is_missing() -> None:
+    df = pd.DataFrame({"id": [1, 2], "name": ["a", "b"]})
+
+    with pytest.raises(OutputSchemaError, match="date-like"):
+        normalize_dataframe(df, date(2026, 3, 5))

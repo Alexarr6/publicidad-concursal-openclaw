@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import date
-from pathlib import Path
 from typing import Protocol
+
+from publicidadconcursal_exporter.models import ExportOutput, ExportRequest, ExportTestSpec
 
 
 class AutomationRunner(Protocol):
     """Contract for automation runners used by the orchestrator."""
 
-    def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        """Run date search + export and return downloaded file path."""
+    def run(self, request: ExportRequest, test: ExportTestSpec) -> ExportOutput:
+        """Run date search + export and return the downloaded output metadata."""

@@ -1,106 +1,89 @@
 from __future__ import annotations
 
-from contextlib import suppress
-from datetime import date
-from importlib.util import find_spec
+import asyncio
+import os
 from pathlib import Path
 from typing import Any
 
+from publicidadconcursal_exporter.automation.action_plan import load_plan
 from publicidadconcursal_exporter.date_utils import to_site_date_formats
+from publicidadconcursal_exporter.models import ExportOutput, ExportRequest, ExportTestSpec
 
 
 class BrowserUseRunner:
-    """Runner gated by `browser-use` availability, implemented with Playwright actions."""
+    """Native browser-use execution runner (no Playwright fallback)."""
 
-    def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        if find_spec("browser_use") is None:
-            raise RuntimeError("browser-use is not installed. Use --engine playwright.")
+    def run(self, request: ExportRequest, test: ExportTestSpec) -> ExportOutput:
+        self._run_agent(request)
 
+        downloaded = self._pick_latest_download(request.download_dir)
+        self._validate_output(downloaded, test)
+
+        return ExportOutput(
+            file_path=downloaded,
+            plan_name="search_and_export",
+            evidence=("browser-use-native", "verify_download"),
+        )
+
+    def _run_agent(self, request: ExportRequest) -> None:
+        agent_cls, llm_cls = self._load_browser_use_classes()
+
+        search_plan = load_plan("search_and_export")
+        verify_plan = load_plan("verify_download")
+        ddmmyyyy = to_site_date_formats(request.run_date)[1]
+
+        task = (
+            f"{search_plan}\n\n"
+            f"Target URL: {request.target_url}\n"
+            f"Run date (required format): {ddmmyyyy}\n"
+            f"Download directory (must be used): {request.download_dir.resolve()}\n"
+            f"Timeout budget per step: {request.timeout_ms}ms\n\n"
+            f"{verify_plan}"
+        )
+
+        async def _exec() -> None:
+            previous_download_path = os.environ.get("BROWSER_USE_DOWNLOAD_PATH")
+            os.environ["BROWSER_USE_DOWNLOAD_PATH"] = str(request.download_dir.resolve())
+            try:
+                llm = llm_cls()
+                agent = agent_cls(task=task, llm=llm)
+                await agent.run()
+            finally:
+                if previous_download_path is None:
+                    os.environ.pop("BROWSER_USE_DOWNLOAD_PATH", None)
+                else:
+                    os.environ["BROWSER_USE_DOWNLOAD_PATH"] = previous_download_path
+
+        asyncio.run(_exec())
+
+    def _load_browser_use_classes(self) -> tuple[type[Any], type[Any]]:
         try:
-            from playwright.sync_api import sync_playwright
+            from browser_use import Agent, ChatBrowserUse
         except ImportError as exc:
             raise RuntimeError(
-                "browser-use compatibility flow requires playwright to be installed"
+                "browser-use is not installed. Install project web extras to run automation."
             ) from exc
 
-        date_candidates = to_site_date_formats(run_date)
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(headless=True)
-            context = browser.new_context(accept_downloads=True)
-            page = context.new_page()
-            page.goto(target_url, timeout=timeout_ms)
-            self._run_ui_flow(page, date_candidates, timeout_ms)
-            with page.expect_download(timeout=timeout_ms) as download_info:
-                self._click_export(page)
-            download = download_info.value
-            default_name = f"publicidadconcursal-{run_date.isoformat()}.bin"
-            safe_name = download.suggested_filename or default_name
-            out_path = download_dir / safe_name
-            download.save_as(str(out_path))
-            context.close()
-            browser.close()
-            return out_path
+        return Agent, ChatBrowserUse
 
-    def _run_ui_flow(self, page: Any, date_candidates: list[str], timeout_ms: int) -> None:
-        self._dismiss_cookie_banner(page)
-        self._click_search_by_date(page)
-        self._fill_date(page, date_candidates)
-        page.get_by_role("button", name="Buscar").first.click(timeout=timeout_ms)
+    def _pick_latest_download(self, download_dir: Path) -> Path:
+        if not download_dir.exists():
+            raise RuntimeError(f"Download directory does not exist: {download_dir}")
 
-    def _dismiss_cookie_banner(self, page: Any) -> None:
-        # Klaro cookie modal can intercept pointer events and block UI actions.
-        # Try common consent actions and then wait for overlay to disappear.
-        for label in [
-            "Aceptar",
-            "Aceptar todo",
-            "Aceptar todas",
-            "Aceptar cookies",
-            "Rechazar",
-            "Rechazar todo",
-            "Guardar preferencias",
-            "Entendido",
-        ]:
-            try:
-                btn = page.get_by_role("button", name=label).first
-                if btn.count() > 0:
-                    btn.click(timeout=3000)
-                    break
-            except Exception:
-                continue
+        candidates = [path for path in download_dir.iterdir() if path.is_file()]
+        if not candidates:
+            raise RuntimeError("browser-use run finished without downloaded files")
 
-        for selector in ["#klaro-cookie-notice", "#klaro .cm-bg"]:
-            # If not found/hidden already, continue silently.
-            with suppress(Exception):
-                page.locator(selector).first.wait_for(state="hidden", timeout=5000)
+        candidates.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+        return candidates[0]
 
-    def _click_search_by_date(self, page: Any) -> None:
-        for query in [
-            "buscar por fecha",
-            "búsqueda por fecha",
-            "fecha",
-        ]:
-            loc = page.get_by_text(query, exact=False).first
-            if loc.count() > 0:
-                loc.click()
-                return
+    def _validate_output(self, file_path: Path, test: ExportTestSpec) -> None:
+        if test.must_download_file and not file_path.exists():
+            raise RuntimeError(f"Expected downloaded file not found: {file_path}")
 
-    def _fill_date(self, page: Any, date_candidates: list[str]) -> None:
-        for selector in ["input[type='date']", "input[name*='fecha']", "input[id*='fecha']"]:
-            loc = page.locator(selector).first
-            if loc.count() == 0:
-                continue
-            for candidate in date_candidates:
-                try:
-                    loc.fill(candidate)
-                    return
-                except Exception:
-                    continue
-        raise RuntimeError("Date input field not found for search")
-
-    def _click_export(self, page: Any) -> None:
-        for text in ["Exportar", "Descargar", "CSV", "Excel"]:
-            loc = page.get_by_text(text, exact=False).first
-            if loc.count() > 0:
-                loc.click()
-                return
-        raise RuntimeError("Export button not found")
+        if file_path.suffix.lower() not in test.allowed_suffixes:
+            allowed = ", ".join(test.allowed_suffixes)
+            raise RuntimeError(
+                "Downloaded file has unsupported extension "
+                f"{file_path.suffix!r}; expected one of: {allowed}"
+            )

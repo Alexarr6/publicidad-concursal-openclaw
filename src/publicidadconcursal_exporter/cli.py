@@ -20,9 +20,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", default=".", help="Output directory")
     parser.add_argument(
         "--engine",
-        choices=["auto", "browser-use", "playwright"],
-        default="auto",
-        help="Automation engine",
+        choices=["browser-use"],
+        default="browser-use",
+        help="Automation engine (native browser-use only)",
     )
     parser.add_argument("--max-retries", type=int, default=2, help="Number of retry attempts")
     parser.add_argument(

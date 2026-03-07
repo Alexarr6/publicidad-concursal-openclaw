@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import shutil
 from collections.abc import Callable
-from datetime import date
 from pathlib import Path
 
 from publicidadconcursal_exporter.automation.base import AutomationRunner
 from publicidadconcursal_exporter.automation.browser_use_runner import BrowserUseRunner
-from publicidadconcursal_exporter.automation.playwright_runner import PlaywrightRunner
 from publicidadconcursal_exporter.config import ExportConfig
 from publicidadconcursal_exporter.logging_utils import setup_logger
+from publicidadconcursal_exporter.models import (
+    ExportOutput,
+    ExportReport,
+    ExportRequest,
+    ExportTestSpec,
+    NormalizedRecordSchema,
+)
 from publicidadconcursal_exporter.parsing.normalize import (
     EmptyExportError,
     export_daily_csv,
@@ -27,8 +32,25 @@ def run_export(config: ExportConfig) -> tuple[Path, Path]:
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     runner = _resolve_runner(config.engine)
-    raw_file = _retry_automation(config, raw_dir, runner.run, logger.info)
+    request = ExportRequest(
+        target_url=config.target_url,
+        run_date=config.run_date,
+        download_dir=raw_dir / "tmp",
+        timeout_ms=config.timeout_ms,
+    )
+    test = ExportTestSpec()
+
+    output = _retry_automation(config, request, test, runner.run, logger.info)
+    report = ExportReport(
+        request=request,
+        test=test,
+        schema=NormalizedRecordSchema(),
+        output=output,
+    )
+
+    raw_file = _move_to_raw_dir(report.output, raw_dir)
     logger.info("Raw export saved to %s", raw_file)
+    logger.info("Automation plan=%s evidence=%s", report.output.plan_name, report.output.evidence)
 
     df = load_export(raw_file)
     normalized = normalize_dataframe(df, config.run_date)
@@ -42,53 +64,26 @@ def run_export(config: ExportConfig) -> tuple[Path, Path]:
     return raw_file, csv_output
 
 
-def _resolve_runner(engine: str) -> AutomationRunner:
-    """Instantiate a runner based on engine selection."""
+def _resolve_runner(_engine: str) -> AutomationRunner:
+    """Instantiate the browser-use native runner."""
 
-    if engine == "browser-use":
-        return BrowserUseRunner()
-    if engine == "playwright":
-        return PlaywrightRunner()
-
-    return AutoRunner()
-
-
-class AutoRunner:
-    """Try browser-use compatibility mode first, then fallback to Playwright."""
-
-    def __init__(self) -> None:
-        self._browser_use = BrowserUseRunner()
-        self._playwright = PlaywrightRunner()
-
-    def run(self, target_url: str, run_date: date, download_dir: Path, timeout_ms: int) -> Path:
-        try:
-            return self._browser_use.run(target_url, run_date, download_dir, timeout_ms)
-        except Exception:
-            return self._playwright.run(target_url, run_date, download_dir, timeout_ms)
+    return BrowserUseRunner()
 
 
 def _retry_automation(
     config: ExportConfig,
-    raw_dir: Path,
-    automation_fn: Callable[[str, date, Path, int], Path],
+    request: ExportRequest,
+    test: ExportTestSpec,
+    automation_fn: Callable[[ExportRequest, ExportTestSpec], ExportOutput],
     log: Callable[..., None],
-) -> Path:
-    """Retry automation and move the resulting download to the final raw folder."""
+) -> ExportOutput:
+    """Retry automation and return the output metadata on success."""
 
     last_error: Exception | None = None
     for attempt in range(1, config.max_retries + 1):
         try:
-            tmp_download = raw_dir / "tmp"
-            tmp_download.mkdir(parents=True, exist_ok=True)
-            raw_path = automation_fn(
-                config.target_url,
-                config.run_date,
-                tmp_download,
-                config.timeout_ms,
-            )
-            final_path = raw_dir / raw_path.name
-            shutil.move(str(raw_path), final_path)
-            return final_path
+            request.download_dir.mkdir(parents=True, exist_ok=True)
+            return automation_fn(request, test)
         except Exception as exc:
             last_error = exc
             log("Attempt %s/%s failed: %s", attempt, config.max_retries, exc)
@@ -98,3 +93,9 @@ def _retry_automation(
         f"Last error: {last_error}"
     )
     raise RuntimeError(message) from last_error
+
+
+def _move_to_raw_dir(output: ExportOutput, raw_dir: Path) -> Path:
+    final_path = raw_dir / output.file_path.name
+    shutil.move(str(output.file_path), final_path)
+    return final_path

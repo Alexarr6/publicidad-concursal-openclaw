@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from publicidadconcursal_exporter.models import NormalizedRecordSchema
+
 DATE_CANDIDATES = {
     "fecha",
     "fecha_publicacion",
@@ -17,6 +19,10 @@ DATE_CANDIDATES = {
 
 class EmptyExportError(RuntimeError):
     """Raised when a raw export cannot produce a usable normalized dataset."""
+
+
+class OutputSchemaError(RuntimeError):
+    """Raised when normalized output does not satisfy required schema."""
 
 
 def load_export(raw_path: Path) -> pd.DataFrame:
@@ -57,6 +63,7 @@ def normalize_dataframe(df: pd.DataFrame, run_date: date) -> pd.DataFrame:
     if normalized.empty:
         raise EmptyExportError("Normalization produced zero rows")
 
+    validate_output_schema(normalized, NormalizedRecordSchema())
     return normalized
 
 
@@ -65,6 +72,22 @@ def export_daily_csv(df: pd.DataFrame, output_path: Path) -> None:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
+
+
+def validate_output_schema(df: pd.DataFrame, schema: NormalizedRecordSchema) -> None:
+    """Validate normalized output shape and required fields."""
+
+    columns_lower = {str(col).strip().lower() for col in df.columns}
+
+    for required in schema.required_columns:
+        if required.lower() not in columns_lower:
+            raise OutputSchemaError(f"Missing required output column: {required}")
+
+    if not any(candidate in columns_lower for candidate in schema.required_any_date_columns):
+        options = ", ".join(schema.required_any_date_columns)
+        raise OutputSchemaError(
+            f"Output must include at least one date-like column. Expected one of: {options}"
+        )
 
 
 def _pick_date_column(df: pd.DataFrame) -> str | None:

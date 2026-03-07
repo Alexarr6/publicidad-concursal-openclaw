@@ -16,7 +16,6 @@ dependencies = [
 
 [project.optional-dependencies]
 web = [
-  "playwright>=1.54.0",
   "browser-use>=0.1.40",
 ]
 dev = [

@@ -6,13 +6,12 @@ Automates date-based search in Publicidad Concursal, downloads the daily export,
 
 - Python 3.11+
 - `uv` recommended for project commands
-- Browser for Playwright (`playwright install chromium`)
+- browser-use runtime dependencies
 
 ## Installation
 
 ```bash
 uv sync --all-extras
-uv run playwright install chromium
 ```
 
 ## CLI Usage
@@ -20,7 +19,7 @@ uv run playwright install chromium
 ```bash
 uv run publicidadconcursal-export --date 2026-03-05 \
   --target-url https://www.publicidadconcursal.es/consulta-publicidad-concursal-new \
-  --engine auto \
+  --engine browser-use \
   --output-dir .
 ```
 
@@ -28,19 +27,29 @@ Key parameters:
 
 - `--date YYYY-MM-DD` (default: today)
 - `--target-url` target URL (official URL by default)
-- `--engine auto|browser-use|playwright`
+- `--engine browser-use` (native mode only)
 - `--max-retries` retries for transient UI/network failures
 - `--timeout-ms` per-step timeout
 
 ## Implemented Flow
 
-1. Click date-based search.
-2. Fill the date with supported formats (`YYYY-MM-DD`, `DD/MM/YYYY`, `DD-MM-YYYY`).
-3. Click `Buscar`.
-4. Click `Exportar`.
-5. Store raw artifact in `artifacts/raw/YYYY-MM-DD/`.
-6. Parse and normalize with pandas.
-7. Generate daily CSV in `artifacts/csv/`, sorted by date.
+1. Run browser-use native automation using explicit plan files:
+   - `src/publicidadconcursal_exporter/automation/plans/search_and_export.md`
+   - `src/publicidadconcursal_exporter/automation/plans/verify_download.md`
+2. Store raw artifact in `artifacts/raw/YYYY-MM-DD/`.
+3. Parse and normalize with pandas.
+4. Generate daily CSV in `artifacts/csv/`, sorted by date.
+
+## Typed Data Models
+
+The automation contract now uses explicit typed models:
+
+- `ExportRequest`
+- `ExportTestSpec`
+- `ExportOutput`
+- `ExportReport`
+
+All are defined in `src/publicidadconcursal_exporter/models.py`.
 
 ## Validations
 
@@ -53,10 +62,9 @@ Key parameters:
 Contract verification commands:
 
 ```bash
-uv run ruff check .
-uv run pytest
-uv run mypy .
-uv run pre-commit run --all-files
+uv pip check
+uv run pytest -q
+uv run ruff check . && uv run mypy src
 ```
 
 ## Pre-commit
@@ -80,7 +88,7 @@ Included hooks:
 - lint/format (`ruff`, `ruff-format`)
 - type checking (`mypy`)
 
-## Manual Workaround (if automation is blocked by the site)
+## Manual Workaround (if site automation is blocked)
 
 1. Open `https://www.publicidadconcursal.es/consulta-publicidad-concursal-new`.
 2. Go to date-based search.
@@ -96,15 +104,10 @@ uv run python -m publicidadconcursal_exporter.manual_normalize \
   --output-dir .
 ```
 
-## browser-use Integration Note
-
-- The `browser-use` engine is currently a compatibility-gated runner.
-- It validates that `browser_use` is installed, then executes the existing Playwright-based deterministic flow.
-- This keeps behavior stable while preserving an explicit dependency path for future native browser-use agent migration.
-
 ## Project Structure
 
-- `src/publicidadconcursal_exporter/automation/`: automation runners
+- `src/publicidadconcursal_exporter/automation/`: native browser-use automation + plans
 - `src/publicidadconcursal_exporter/parsing/`: parsing and normalization
+- `src/publicidadconcursal_exporter/models.py`: typed contracts for request/test/output/report
 - `src/publicidadconcursal_exporter/orchestrator.py`: main pipeline
 - `tests/`: unit tests
