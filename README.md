@@ -104,39 +104,9 @@ uv run python -m publicidadconcursal_exporter.manual_normalize \
   --output-dir .
 ```
 
-## Context7 REST Wrapper (local workflow)
-
-This repository includes a small Context7 REST wrapper for local coder usage, without MCP client dependency.
-
-Endpoints expected by the wrapper:
-
-- `GET /context7/search?q=...`
-- `GET /context7/fetch?id=...`
-
-Run from repo:
-
-```bash
-uv run publicidadconcursal-context7 search --q "browser-use agent run"
-uv run publicidadconcursal-context7 fetch --id "doc-123"
-```
-
-Optional flags:
-
-- `--base-url` (default: `http://127.0.0.1:3000`)
-- `--timeout-s` (default: `6.0`)
-- `--max-retries` (default: `2`)
-
-Output format is deterministic JSON:
-
-- `sources[]` with `{title, url}`
-- `snippets[]`
-- `retrieved_at`
-
 ## Project Structure
 
 - `src/publicidadconcursal_exporter/automation/`: native browser-use automation + plans
-- `src/publicidadconcursal_exporter/context7_client.py`: Context7 REST wrapper client
-- `src/publicidadconcursal_exporter/context7_cli.py`: local CLI tool for Context7 wrapper
 - `src/publicidadconcursal_exporter/parsing/`: parsing and normalization
 - `src/publicidadconcursal_exporter/models.py`: typed contracts for request/test/output/report
 - `src/publicidadconcursal_exporter/orchestrator.py`: main pipeline
