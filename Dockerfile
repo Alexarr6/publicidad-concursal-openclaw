@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 WORKDIR /app
 
@@ -17,11 +18,13 @@ COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
 
 RUN uv sync --frozen --all-extras
+RUN /app/.venv/bin/playwright install --with-deps chromium
 
-RUN useradd --create-home --uid 10001 appuser
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
 VOLUME ["/app/artifacts"]
 
-ENTRYPOINT ["uv", "run", "publicidadconcursal-export"]
+ENTRYPOINT ["/app/.venv/bin/publicidadconcursal-export"]
 CMD ["--help"]

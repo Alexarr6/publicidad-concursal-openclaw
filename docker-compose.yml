@@ -5,6 +5,12 @@ services:
       dockerfile: Dockerfile
     image: publicidadconcursal-exporter:local
     working_dir: /app
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+      UV_CACHE_DIR: /tmp/.cache/uv
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     volumes:
       - ./artifacts:/app/artifacts
     command: ["--help"]
