@@ -1,4 +1,20 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-publicidad}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   app:
     build:
       context: .
@@ -6,11 +22,18 @@ services:
     image: publicidadconcursal-exporter:local
     working_dir: /app
     user: "${UID:-1000}:${GID:-1000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       HOME: /tmp
       XDG_CACHE_HOME: /tmp/.cache
       UV_CACHE_DIR: /tmp/.cache/uv
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/publicidad}
     volumes:
       - ./artifacts:/app/artifacts
     command: ["--help"]
+
+volumes:
+  postgres_data:

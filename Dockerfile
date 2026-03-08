@@ -16,6 +16,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 
 COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
+COPY scripts /app/scripts
 
 RUN uv sync --frozen --all-extras
 RUN /app/.venv/bin/playwright install --with-deps chromium
