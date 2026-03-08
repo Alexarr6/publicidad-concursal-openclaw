@@ -59,6 +59,40 @@ docker compose run --rm app \
 
 The compose service mounts host `./artifacts` to `/app/artifacts` in the container.
 
+## Make Workflow
+
+Show available commands:
+
+```bash
+make help
+```
+
+Run environment checks (required by `make build`, `make run`, `make run-today`):
+
+```bash
+make preflight
+```
+
+Run build and export:
+
+```bash
+make build
+make run DATE=2026-03-07
+make run-today
+```
+
+What `preflight` validates:
+
+- binaries: `git`, `gh`, `uv`, `docker`, `docker compose`
+- Docker daemon availability
+- `gh auth status` (warning by default in this phase)
+
+If `gh auth status` fails and you need GitHub API access:
+
+```bash
+gh auth login
+```
+
 ## Raspberry Pi Notes
 
 See dedicated operations guide:
