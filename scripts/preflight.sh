@@ -15,7 +15,11 @@ check_bin() {
 
 check_bin git
 check_bin gh
-check_bin uv
+if command -v uv >/dev/null 2>&1; then
+  echo "[ok] uv found"
+else
+  echo "[warn] uv not found (OK for Docker-only workflow; required for host-based test/lint commands)"
+fi
 check_bin docker
 
 if docker compose version >/dev/null 2>&1; then
