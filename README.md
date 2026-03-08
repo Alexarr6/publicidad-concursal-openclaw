@@ -61,6 +61,54 @@ The compose service mounts host `./artifacts` to `/app/artifacts` in the contain
 
 ## Make Workflow
 
+### Phase 2 (PostgreSQL) quickstart
+
+Start Postgres:
+
+```bash
+export UID=$(id -u)
+export GID=$(id -g)
+make db-up
+```
+
+Initialize schema:
+
+```bash
+make db-init
+```
+
+Run export + load into Postgres:
+
+```bash
+make run-and-load DATE=2026-03-08
+make run-and-load-today
+```
+
+Idempotency check (run twice; row count must not increase):
+
+```bash
+make db-load DATE=2026-03-08
+make db-load DATE=2026-03-08
+```
+
+Env vars:
+
+- `DATABASE_URL` (default: `postgresql+psycopg://postgres:postgres@localhost:5432/publicidad`)
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (compose defaults)
+- alerting (used by `scripts/run_daily.sh`):
+  - `ALERT_WEBHOOK_URL` (POST JSON `{text: ...}`)
+  - or `ALERT_COMMAND` (executed via `bash -lc`, with `MSG` in env)
+  - `ALERT_COOLDOWN_MINUTES` (default: 720)
+
+Daily ops wrapper:
+
+```bash
+bash scripts/run_daily.sh
+```
+
+It retries once on failure and writes state to `artifacts/state/`.
+
+
 Show available commands:
 
 ```bash
