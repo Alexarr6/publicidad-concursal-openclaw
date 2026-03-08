@@ -13,7 +13,9 @@ class Base(DeclarativeBase):
 
 class CsvRecord(Base):
     __tablename__ = "csv_records"
-    __table_args__ = (UniqueConstraint("run_date", "row_hash", name="uq_csv_records_run_date_row_hash"),)
+    __table_args__ = (
+        UniqueConstraint("run_date", "row_hash", name="uq_csv_records_run_date_row_hash"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     run_date: Mapped[date] = mapped_column(Date, index=True)

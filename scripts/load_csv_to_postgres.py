@@ -35,7 +35,11 @@ def main() -> None:
     args = build_parser().parse_args()
     run_date = date.fromisoformat(args.date)
 
-    csv_path = Path(args.csv_path) if args.csv_path else Path(args.artifacts_dir) / f"publicidadconcursal-{args.date}.csv"
+    csv_path = (
+        Path(args.csv_path)
+        if args.csv_path
+        else Path(args.artifacts_dir) / f"publicidadconcursal-{args.date}.csv"
+    )
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
 

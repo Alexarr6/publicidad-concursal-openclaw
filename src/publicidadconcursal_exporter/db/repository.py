@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date
-import logging
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
