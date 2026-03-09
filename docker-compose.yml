@@ -30,9 +30,12 @@ services:
       XDG_CACHE_HOME: /tmp/.cache
       UV_CACHE_DIR: /tmp/.cache/uv
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PYTHONPATH: /app/src
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/publicidad}
     volumes:
       - ./artifacts:/app/artifacts
+      - ./src:/app/src:ro
+      - ./scripts:/app/scripts:ro
     command: ["--help"]
 
 volumes:
