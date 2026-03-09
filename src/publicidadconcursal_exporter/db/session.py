@@ -29,6 +29,13 @@ def ensure_schema(engine: Engine) -> None:
             "numero_procedimiento_expediente VARCHAR(256)"
         ),
         "ALTER TABLE csv_records ADD COLUMN IF NOT EXISTS seccion VARCHAR(128)",
+        "CREATE INDEX IF NOT EXISTS ix_csv_records_run_date ON csv_records (run_date)",
+        "CREATE INDEX IF NOT EXISTS ix_csv_records_nif_sujeto ON csv_records (nif_sujeto)",
+        "CREATE INDEX IF NOT EXISTS ix_csv_records_seccion ON csv_records (seccion)",
+        (
+            "CREATE INDEX IF NOT EXISTS ix_csv_records_run_date_nif_sujeto "
+            "ON csv_records (run_date, nif_sujeto)"
+        ),
     ]
 
     with engine.begin() as conn:
