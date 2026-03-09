@@ -61,6 +61,85 @@ The compose service mounts host `./artifacts` to `/app/artifacts` in the contain
 
 ## Make Workflow
 
+### Phase 2 (PostgreSQL) quickstart
+
+Start Postgres:
+
+```bash
+export UID=$(id -u)
+export GID=$(id -g)
+make db-up
+```
+
+Initialize schema:
+
+```bash
+make db-init
+```
+
+Run export + load into Postgres:
+
+```bash
+make run-and-load DATE=2026-03-08
+make run-and-load-today
+```
+
+Idempotency check (run twice; row count must not increase):
+
+```bash
+make db-load DATE=2026-03-08
+make db-load DATE=2026-03-08
+```
+
+Env vars:
+
+- `DATABASE_URL` (default: `postgresql+psycopg://postgres:postgres@localhost:5432/publicidad`)
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (compose defaults)
+- alerting (used by `scripts/run_daily.sh`):
+  - `ALERT_WEBHOOK_URL` (POST JSON `{text: ...}`)
+  - or `ALERT_COMMAND` (executed via `bash -lc`, with `MSG` in env)
+  - `ALERT_COOLDOWN_MINUTES` (default: 720)
+
+Normalized explicit DB columns in `csv_records` (in addition to `payload` for compatibility/audit):
+
+- `nif_sujeto`
+- `sujeto`
+- `tipo_resolucion`
+- `fecha_resolucion_raw`
+- `fecha_resolucion`
+- `numero_procedimiento_expediente`
+- `seccion`
+
+CSV source headers are normalized internally to ASCII/snake_case (accents/symbols removed) for robust mapping.
+
+Indexes created/ensured on `db-init` (upgrade-safe):
+
+- `ix_csv_records_run_date`
+- `ix_csv_records_nif_sujeto`
+- `ix_csv_records_seccion`
+- `ix_csv_records_run_date_nif_sujeto`
+
+Daily ops wrapper:
+
+```bash
+bash scripts/run_daily.sh
+```
+
+It retries once on failure and writes state to `artifacts/state/`.
+
+Alert behavior includes:
+
+- alert on second consecutive run failure (with cooldown)
+- alert on **0 rows loaded on weekdays** (Mon-Fri, Europe/Madrid), also cooldown-protected
+
+Smoke test (quick local E2E check):
+
+```bash
+make smoke-test
+# or explicit date
+make smoke-test DATE=2026-03-08
+```
+
 Show available commands:
 
 ```bash
