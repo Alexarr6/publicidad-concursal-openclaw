@@ -51,6 +51,13 @@ class CsvRecordRepository:
                             row_number=row.row_number,
                             row_hash=row.row_hash,
                             payload=row.payload,
+                            nif_sujeto=row.nif_sujeto,
+                            sujeto=row.sujeto,
+                            tipo_resolucion=row.tipo_resolucion,
+                            fecha_resolucion_raw=row.fecha_resolucion_raw,
+                            fecha_resolucion=row.fecha_resolucion,
+                            numero_procedimiento_expediente=row.numero_procedimiento_expediente,
+                            seccion=row.seccion,
                         )
                     )
                     summary.inserted += 1
@@ -63,6 +70,13 @@ class CsvRecordRepository:
                 existing.payload = row.payload
                 existing.source_file = row.source_file
                 existing.row_number = row.row_number
+                existing.nif_sujeto = row.nif_sujeto
+                existing.sujeto = row.sujeto
+                existing.tipo_resolucion = row.tipo_resolucion
+                existing.fecha_resolucion_raw = row.fecha_resolucion_raw
+                existing.fecha_resolucion = row.fecha_resolucion
+                existing.numero_procedimiento_expediente = row.numero_procedimiento_expediente
+                existing.seccion = row.seccion
                 summary.updated += 1
             except Exception as exc:
                 summary.errors += 1

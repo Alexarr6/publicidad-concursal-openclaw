@@ -12,3 +12,11 @@ class CsvRecordIngest(BaseModel):
     row_number: int = Field(ge=1)
     row_hash: str
     payload: dict[str, Any]
+
+    nif_sujeto: str | None = None
+    sujeto: str | None = None
+    tipo_resolucion: str | None = None
+    fecha_resolucion_raw: str | None = None
+    fecha_resolucion: date | None = None
+    numero_procedimiento_expediente: str | None = None
+    seccion: str | None = None

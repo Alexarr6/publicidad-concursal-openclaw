@@ -23,6 +23,15 @@ class CsvRecord(Base):
     row_number: Mapped[int] = mapped_column(Integer)
     row_hash: Mapped[str] = mapped_column(String(64), index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+    nif_sujeto: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    sujeto: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    tipo_resolucion: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    fecha_resolucion_raw: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    fecha_resolucion: Mapped[date | None] = mapped_column(Date, nullable=True)
+    numero_procedimiento_expediente: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    seccion: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
