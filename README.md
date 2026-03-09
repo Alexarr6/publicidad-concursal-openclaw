@@ -100,6 +100,18 @@ Env vars:
   - or `ALERT_COMMAND` (executed via `bash -lc`, with `MSG` in env)
   - `ALERT_COOLDOWN_MINUTES` (default: 720)
 
+Normalized explicit DB columns in `csv_records` (in addition to `payload` for compatibility/audit):
+
+- `nif_sujeto`
+- `sujeto`
+- `tipo_resolucion`
+- `fecha_resolucion_raw`
+- `fecha_resolucion`
+- `numero_procedimiento_expediente`
+- `seccion`
+
+CSV source headers are normalized internally to ASCII/snake_case (accents/symbols removed) for robust mapping.
+
 Daily ops wrapper:
 
 ```bash
