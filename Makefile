@@ -17,7 +17,7 @@ run: preflight ## Run export for DATE=YYYY-MM-DD
 		echo "ERROR: DATE is required. Usage: make run DATE=YYYY-MM-DD"; \
 		exit 1; \
 	fi
-	@docker compose run --rm app --date "$(DATE)" --output-dir /app
+	@docker compose run --rm --build app --date "$(DATE)" --output-dir /app
 
 run-today: preflight ## Run export for today's date in Europe/Madrid
 	@$(MAKE) run DATE=$$(TZ=Europe/Madrid date +%F)
@@ -31,14 +31,14 @@ db-down: ## Stop Postgres service
 	@docker compose stop postgres
 
 db-init: ## Initialize schema (requires Postgres running)
-	@docker compose run --rm --entrypoint /app/.venv/bin/python app scripts/db_init.py
+	@docker compose run --rm --build --entrypoint /app/.venv/bin/python app scripts/db_init.py
 
 db-load: ## Load CSV for DATE=YYYY-MM-DD into Postgres
 	@if [ -z "$(DATE)" ]; then \
 		echo "ERROR: DATE is required. Usage: make db-load DATE=YYYY-MM-DD"; \
 		exit 1; \
 	fi
-	@docker compose run --rm --entrypoint /app/.venv/bin/python app scripts/load_csv_to_postgres.py --date "$(DATE)"
+	@docker compose run --rm --build --entrypoint /app/.venv/bin/python app scripts/load_csv_to_postgres.py --date "$(DATE)"
 
 run-and-load: preflight ## Run export then load CSV for DATE=YYYY-MM-DD
 	@if [ -z "$(DATE)" ]; then \
