@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Index, JSON, Date, DateTime, Integer, String, UniqueConstraint, func
+from sqlalchemy import JSON, Date, DateTime, Index, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
