@@ -10,6 +10,28 @@ error_file="$state_dir/last_error"
 updated_file="$state_dir/last_run_utc"
 alert_file="$state_dir/last_alert_utc"
 
+cooldown_min="${ALERT_COOLDOWN_MINUTES:-720}"
+
+should_alert_now() {
+  if [ -f "$alert_file" ]; then
+    last_epoch=$(date -u -d "$(cat "$alert_file")" +%s 2>/dev/null || echo 0)
+    now_epoch=$(date -u +%s)
+    elapsed_min=$(((now_epoch - last_epoch) / 60))
+    if [ "$elapsed_min" -lt "$cooldown_min" ]; then
+      return 1
+    fi
+  fi
+  return 0
+}
+
+send_alert_if_allowed() {
+  local msg="$1"
+  if should_alert_now; then
+    bash scripts/send_alert.sh "$msg"
+    date -u +%FT%TZ > "$alert_file"
+  fi
+}
+
 failures=0
 if [ -f "$fails_file" ]; then
   failures="$(cat "$fails_file")"
@@ -39,6 +61,24 @@ if [ $rc -eq 0 ]; then
   echo "ok" > "$status_file"
   echo "0" > "$fails_file"
   : > "$error_file"
+
+  madrid_date="$(TZ=Europe/Madrid date +%F)"
+  madrid_weekday="$(TZ=Europe/Madrid date +%u)"
+  csv_path="artifacts/csv/publicidadconcursal-${madrid_date}.csv"
+
+  if [ -f "$csv_path" ]; then
+    data_rows=$(( $(wc -l < "$csv_path") - 1 ))
+    if [ "$data_rows" -lt 0 ]; then
+      data_rows=0
+    fi
+
+    if [ "$madrid_weekday" -ge 1 ] && [ "$madrid_weekday" -le 5 ] && [ "$data_rows" -eq 0 ]; then
+      msg="Warning: weekday run (${madrid_date}, Europe/Madrid) loaded 0 rows. Please review source availability."
+      send_alert_if_allowed "$msg"
+      echo "$msg" > "$error_file"
+    fi
+  fi
+
   echo "daily run succeeded"
   exit 0
 fi
@@ -49,22 +89,8 @@ echo "failed" > "$status_file"
 echo "run-and-load-today failed after retry" > "$error_file"
 
 if [ "$failures" -ge 2 ]; then
-  cooldown_min="${ALERT_COOLDOWN_MINUTES:-720}"
-  should_alert=1
-  if [ -f "$alert_file" ]; then
-    last_epoch=$(date -u -d "$(cat "$alert_file")" +%s 2>/dev/null || echo 0)
-    now_epoch=$(date -u +%s)
-    elapsed_min=$(((now_epoch - last_epoch) / 60))
-    if [ "$elapsed_min" -lt "$cooldown_min" ]; then
-      should_alert=0
-    fi
-  fi
-
-  if [ "$should_alert" -eq 1 ]; then
-    msg="Reminder: publicidad-concursal daily pipeline has failed ${failures} times consecutively (with one retry each run). Last failure at ${now}."
-    bash scripts/send_alert.sh "$msg"
-    echo "$now" > "$alert_file"
-  fi
+  msg="Reminder: publicidad-concursal daily pipeline has failed ${failures} times consecutively (with one retry each run). Last failure at ${now}."
+  send_alert_if_allowed "$msg"
 fi
 
 exit 1
