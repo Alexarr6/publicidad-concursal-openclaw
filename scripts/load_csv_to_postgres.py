@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from publicidadconcursal_exporter.db.csv_mapping import map_payload_to_columns
 from publicidadconcursal_exporter.db.domain import CsvRecordIngest
 from publicidadconcursal_exporter.db.repository import CsvRecordRepository
 from publicidadconcursal_exporter.db.session import create_engine_from_env
@@ -47,6 +48,7 @@ def main() -> None:
     records: list[CsvRecordIngest] = []
     for idx, row in enumerate(df.to_dict(orient="records"), start=1):
         payload = {str(k): v for k, v in row.items()}
+        mapped = map_payload_to_columns(payload)
         records.append(
             CsvRecordIngest(
                 run_date=run_date,
@@ -54,6 +56,7 @@ def main() -> None:
                 row_number=idx,
                 row_hash=_row_hash(payload),
                 payload=payload,
+                **mapped,
             )
         )
 
