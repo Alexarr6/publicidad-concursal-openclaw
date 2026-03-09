@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help preflight build run run-today logs clean test \
+.PHONY: help preflight build run run-today logs clean test smoke-test \
 	db-up db-down db-init db-load run-and-load run-and-load-today
 
 help: ## Show available targets
@@ -59,3 +59,6 @@ clean: ## Remove compose resources created by this project
 
 test: ## Run test suite on host
 	@uv run pytest -q
+
+smoke-test: ## Quick e2e smoke: db-up + db-init + db-load + SQL checks (DATE optional)
+	@bash scripts/smoke_test.sh "$(DATE)"
